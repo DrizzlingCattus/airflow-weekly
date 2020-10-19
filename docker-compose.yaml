@@ -1,0 +1,52 @@
+version: '3'
+services:
+  airflow-exec:
+    image: airflow-exec:latest
+    build:
+      context: .
+      dockerfile: Dockerfile-airflow
+
+  airflow-webserver:
+    image: airflow-exec:latest
+    command: 'webserver'
+    environment:
+      DB_HOST: "${DB_HOST}"
+      DB_PORT: "${DB_PORT}"
+      DB_USER: "${DB_USER}"
+      DB_PASSWORD: "${DB_PASSWORD}"
+      DB_DATABASE_NAME: "${DB_DATABASE_NAME}"
+      #DB_EXTRAS: ""
+    ports:
+      - 43002:8080
+    depends_on:
+      - "${DB_HOSTNAME}"
+      - airflow-exec
+    volumes:
+      - airflow-workspace:/home
+    networks:
+      - app-tier
+
+  ${DB_HOSTNAME}:
+    image: bitnami/mariadb:latest
+    user: root
+    ports:
+      - "${EXTERNAL_DB_PORT}:${DB_PORT}"
+    environment:
+      MARIADB_DATABASE: "${DB_DATABASE_NAME}"
+      MARIADB_USER: "${DB_USER}"
+      MARIADB_PASSWORD: "${DB_PASSWORD}"
+      MARIADB_ROOT_PASSWORD: "${DB_ROOT_PASSWORD}"
+      #MARIADB_EXTRA_FLAGS: "--log-bin"
+    volumes:
+      - airflow-db-data:/bitnami/mariadb
+    networks:
+      - app-tier
+
+volumes:
+  airflow-workspace:
+  airflow-db-data:
+
+networks:
+  app-tier:
+    driver: bridge
+
