@@ -1,16 +1,9 @@
 version: '3'
 services:
-  airflow-exec:
-    image: airflow-exec:latest
-    build:
-      context: .
-      dockerfile: Dockerfile-airflow
-
   airflow-webserver:
-    image: airflow-exec:latest
-    command: 'webserver'
+    image: personal-airflow:latest
     environment:
-      DB_HOST: "${DB_HOST}"
+      DB_HOSTNAME: "${DB_HOSTNAME}"
       DB_PORT: "${DB_PORT}"
       DB_USER: "${DB_USER}"
       DB_PASSWORD: "${DB_PASSWORD}"
@@ -19,8 +12,7 @@ services:
     ports:
       - 43002:8080
     depends_on:
-      - "${DB_HOSTNAME}"
-      - airflow-exec
+      - ${DB_HOSTNAME}
     volumes:
       - airflow-workspace:/home
     networks:
