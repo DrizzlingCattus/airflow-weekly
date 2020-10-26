@@ -14,7 +14,7 @@ services:
     depends_on:
       - ${DB_HOSTNAME}
     volumes:
-      - airflow-workspace:/home
+      - ./dags:/usr/local/airflow/dags
     networks:
       - app-tier
 
@@ -35,7 +35,6 @@ services:
       - app-tier
 
 volumes:
-  airflow-workspace:
   airflow-db-data:
 
 networks:
