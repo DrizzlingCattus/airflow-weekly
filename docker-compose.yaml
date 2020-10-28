@@ -2,6 +2,7 @@ version: '3'
 services:
   airflow-webserver:
     image: personal-airflow:latest
+    restart: always
     environment:
       DB_HOSTNAME: "${DB_HOSTNAME}"
       DB_PORT: "${DB_PORT}"
@@ -17,6 +18,11 @@ services:
       - ./dags:/usr/local/airflow/dags
     networks:
       - app-tier
+    healthcheck:
+      test: ["CMD-SHELL", "[ -f /usr/local/airflow/airflow-webserver.pid ]"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
 
   ${DB_HOSTNAME}:
     image: bitnami/mariadb:latest
