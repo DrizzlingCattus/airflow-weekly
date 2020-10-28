@@ -7,12 +7,13 @@
 : "${AIRFLOW_HOME="/usr/local/airflow"}"
 : "${AIRFLOW__CORE__EXECUTOR:=LocalExecutor}"
 : "${AIRFLOW__CORE__LOAD_EXAMPLES=True}"
+: "${AIRFLOW__CORE__FERNET_KEY:=${FERNET_KEY:=$(python -c "from cryptography.fernet import Fernet; FERNET_KEY = Fernet.generate_key().decode(); print(FERNET_KEY)")}}"
 
 export \
   AIRFLOW_HOME \
   AIRFLOW__CORE__EXECUTOR \
   AIRFLOW__CORE__LOAD_EXAMPLES \
-  #AIRFLOW__CORE__FERNET_KEY \
+  AIRFLOW__CORE__FERNET_KEY \
 
 # Install custom python package if requirements.txt is present
 if [ -e "/requirements.txt" ]; then
