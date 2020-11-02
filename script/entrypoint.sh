@@ -3,18 +3,6 @@
 # Imports
 #. $(dirname "$0")/wait-for-it.sh
 
-# Global variables
-: "${AIRFLOW_HOME="/usr/local/airflow"}"
-: "${AIRFLOW__CORE__EXECUTOR:=LocalExecutor}"
-: "${AIRFLOW__CORE__LOAD_EXAMPLES=True}"
-: "${AIRFLOW__CORE__FERNET_KEY:=${FERNET_KEY:=$(python -c "from cryptography.fernet import Fernet; FERNET_KEY = Fernet.generate_key().decode(); print(FERNET_KEY)")}}"
-
-export \
-  AIRFLOW_HOME \
-  AIRFLOW__CORE__EXECUTOR \
-  AIRFLOW__CORE__LOAD_EXAMPLES \
-  AIRFLOW__CORE__FERNET_KEY \
-
 # Install custom python package if requirements.txt is present
 if [ -e "/requirements.txt" ]; then
   $(command -v pip) install --user -r /requirements.txt
@@ -36,13 +24,7 @@ wait_for_port() {
 }
 
 # Setup mysql connection
-if [ -z "$AIRFLOW__CORE__SQL_ALCHEMY_CONN" ]; then
-  echo "Setup mysql connection"
-
-  # dialect+driver://username:password@host:port/database
-  AIRFLOW__CORE__SQL_ALCHEMY_CONN="mysql+mysqldb://${DB_USER}:${DB_PASSWORD}@${DB_HOSTNAME}:${DB_PORT}/${DB_DATABASE_NAME}${DB_EXTRAS}"
-  export AIRFLOW__CORE__SQL_ALCHEMY_CONN
-
+if [ -n "$AIRFLOW__CORE__SQL_ALCHEMY_CONN" ]; then
   echo "Starting to wait for it"
   wait_for_port "MariaDB" "${DB_HOSTNAME}" "${DB_PORT}"
 fi

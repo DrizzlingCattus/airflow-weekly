@@ -4,6 +4,16 @@ services:
     image: personal-airflow:latest
     restart: always
     environment:
+      # for airflow runtime
+      AIRFLOW_HOME: "${AIRFLOW_HOME}"
+      AIRFLOW__CORE__EXECUTOR: "${AIRFLOW__CORE__EXECUTOR}"
+      AIRFLOW__CORE__LOAD_EXAMPLES: "${AIRFLOW__CORE__LOAD_EXAMPLES}"
+      FERNET_KEY: "${FERNET_KEY}"
+      AIRFLOW__CORE__FERNET_KEY: "${FERNET_KEY}"
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: "${AIRFLOW__CORE__SQL_ALCHEMY_CONN}"
+      PYTHONPATH: "${PYTHONPATH}"
+
+      # for connection info
       DB_HOSTNAME: "${DB_HOSTNAME}"
       DB_PORT: "${DB_PORT}"
       DB_USER: "${DB_USER}"
