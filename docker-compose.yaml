@@ -36,7 +36,6 @@ services:
 
   ${DB_HOSTNAME}:
     image: bitnami/mariadb:latest
-    user: root
     ports:
       - "${EXTERNAL_DB_PORT}:${DB_PORT}"
     environment:
@@ -44,7 +43,7 @@ services:
       MARIADB_USER: "${DB_USER}"
       MARIADB_PASSWORD: "${DB_PASSWORD}"
       MARIADB_ROOT_PASSWORD: "${DB_ROOT_PASSWORD}"
-      #MARIADB_EXTRA_FLAGS: "--log-bin"
+      MARIADB_EXTRA_FLAGS: "--log-warnings=3 --log-bin=mysqld-bin"
     volumes:
       - airflow-db-data:/bitnami/mariadb
     networks:

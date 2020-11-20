@@ -1,16 +1,16 @@
 from datetime import timedelta, date
 
+import requests
 # The DAG object; we'll need this to instantiate a DAG
 from airflow import DAG
 # Operators; we need this to operate!
-from airflow.models.baseoperator import BaseOperator
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.python_operator import PythonOperator
-from airflow.hooks.mysql_hook import MySqlHook
 from airflow.utils.dates import days_ago
-from airflow.utils.decorators import apply_defaults
-import requests
+
+from crawler_app.settings import PROJECT_NAME
+from crawler_app.db import setup_db
 
 # These args will get passed on to each operator
 # You can override them on a per-task basis during operator initialization
@@ -39,7 +39,7 @@ default_args = {
 }
 
 dag = DAG(
-    'crawler',
+    f'{PROJECT_NAME}.task_factory',
     default_args=default_args,
     description='A simple crawler',
     schedule_interval='@once',
@@ -86,36 +86,30 @@ t3 = PythonOperator(
     dag=dag,
 )
 
-class HelloDBOperator(BaseOperator):
-
-    # default 값을 인자 넣어줌
-    @apply_defaults
-    def __init__(
-        self,
-        name: str,
-        mysql_conn_id: str, # airflow's connection id
-        database: str,
-        *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.name = name
-        self.mysql_conn_id = mysql_conn_id
-        self.database = database
-
-    def execute(self, context):
-        hook = MySqlHook(mysql_conn_id=self.mysql_conn_id,
-                         schema=self.database)
-        sql = "select event from log"
-        result = hook.get_first(sql)
-        print(result)
-        return 'ok' 
-
-t4 = HelloDBOperator(
+t4 = PythonOperator(
     task_id='mysql_conn_test',
-    name='mysql_conn_test',
-    mysql_conn_id='airflow_db',
-    database='airflow',
-    dag=dag)
+    python_callable=setup_db,
+    op_kwargs={
+        'conn_id': 'airflow_db',
+        'schema': 'airflow',
+    },
+    dag=dag,
+)
+
+# TODO
+def make_task():
+    pass
+
+t5 = PythonOperator(
+    task_id='conn_test',
+    python_callable=make_task,
+    op_kwargs={
+        'conn_id': 'airflow_db',
+        'schema': 'airflow',
+    },
+}
+
 
 starter >> t1 >> [t2, t3, t4]
 
-
+t4 >>
