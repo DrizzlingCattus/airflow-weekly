@@ -1,6 +1,9 @@
+import json
+import logging
+import requests
+
 from datetime import timedelta, date
 
-import requests
 # The DAG object; we'll need this to instantiate a DAG
 from airflow import DAG
 # Operators; we need this to operate!
@@ -9,8 +12,19 @@ from airflow.operators.bash_operator import BashOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
 
-from crawler_app.settings import PROJECT_NAME
-from crawler_app.db import setup_db
+from crawler_app.settings import (
+    PROJECT_NAME, 
+    DB_DATABASE,
+    HACKERNEWS_DB_CONNECTION_ID)
+from crawler_app.db import (
+    #create_resource,
+    #create_task,
+    get_maxtask_id,
+    setup_db)
+from crawler_app.request import get_maxitem_num, get_item_info
+
+
+MAX_PROCESS_NUM = 10
 
 # These args will get passed on to each operator
 # You can override them on a per-task basis during operator initialization
@@ -38,6 +52,8 @@ default_args = {
     # 'trigger_rule': 'all_success'
 }
 
+logger = logging.getLogger(__name__)
+
 dag = DAG(
     f'{PROJECT_NAME}.task_factory',
     default_args=default_args,
@@ -47,14 +63,9 @@ dag = DAG(
 
 def print_date(**kwargs):
     today = date.today()
+    logger.info(f'{PROJECT_NAME} DAG start running at {today}.')
     #kwargs['task_instance'].xcom_push(key='print', value='asdf')
     return today
-    
-
-starter = DummyOperator(
-    task_id='starting',
-    dag=dag,
-)
 
 t1 = PythonOperator(
     task_id='print_date',
@@ -64,52 +75,40 @@ t1 = PythonOperator(
     dag=dag,
 )
 
-t2 = BashOperator(
-    task_id='sleep',
-    depends_on_past=False,
-    bash_command='sleep 5',
-    retries=3,
-    dag=dag,
-)
+def watch_hackernews_items(conn_id):
+    max_num = get_maxitem_num()
 
-def test_hackernews(**kwargs):
-    #today = kwargs['task_instance'].xcom_pull(task_ids='print_date')
-    url = 'https://hacker-news.firebaseio.com/v0/item/8863.json?print=pretty'
-    response = requests.get(url)
-    body = response.json()
-    print('hacker news', body)
+    dal = setup_db(conn_id)
+    conn = dal.connection
 
-t3 = PythonOperator(
-    task_id='test_hackernews_api',
-    python_callable=test_hackernews,
-    provide_context=True,
-    dag=dag,
-)
+    curr_num = get_maxtask_id(conn) + 1
 
-t4 = PythonOperator(
-    task_id='mysql_conn_test',
-    python_callable=setup_db,
+    logger.info(f'max item: {max_num} & curr item: {curr_num}')
+
+    if max_num <= curr_num:
+        return True 
+
+    for i in range(MAX_PROCESS_NUM):
+        info = get_item_info(curr_num + i)
+
+        logger.info('info is {info}'.format(info=json.dumps(info)))
+
+        if info is None:
+            continue
+
+        resource_id = dal.create_resource(url=info['url'], resource_type=info['type'])
+        dal.create_task(resource_id)
+    dal.close()
+
+    return True
+
+t2 = PythonOperator(
+    task_id='watch_hackernews_items',
+    python_callable=watch_hackernews_items,
     op_kwargs={
-        'conn_id': 'airflow_db',
-        'schema': 'airflow',
+        'conn_id': HACKERNEWS_DB_CONNECTION_ID,
     },
     dag=dag,
 )
 
-# TODO
-def make_task():
-    pass
-
-t5 = PythonOperator(
-    task_id='conn_test',
-    python_callable=make_task,
-    op_kwargs={
-        'conn_id': 'airflow_db',
-        'schema': 'airflow',
-    },
-}
-
-
-starter >> t1 >> [t2, t3, t4]
-
-t4 >>
+t1 >> t2

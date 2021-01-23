@@ -9,8 +9,9 @@ ITEM_INFO_API=f'https://hacker-news.firebaseio.com/{API_VERSION}/item/%d.json'
 MAX_ITEM_API=f'https://hacker-news.firebaseio.com/{API_VERSION}/maxitem.json'
 
 def get_item_info(item_id):
-    logger.info(f'get item info with id ${item_id}')
+    logger.info(f'get item info with id {item_id}')
     res = requests.get(ITEM_INFO_API % item_id)
+
     if res.ok:
         return res.json()
     else:
