@@ -17,8 +17,6 @@ from crawler_app.settings import (
     DB_DATABASE,
     HACKERNEWS_DB_CONNECTION_ID)
 from crawler_app.db import (
-    #create_resource,
-    #create_task,
     get_maxtask_id,
     setup_db)
 from crawler_app.request import get_maxitem_num, get_item_info
